@@ -2,45 +2,79 @@
 <html lang="th">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>WebApp Fullscreen</title>
 
   <style>
-    html, body { height:100%; width:100%; margin:0; padding:0; overflow:hidden; background:#0b0b0c; }
-    *{ box-sizing:border-box; }
-    .app{
-      position:fixed; inset:0;
-      padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px)
-               env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #0b0b0c;
     }
-    iframe{ width:100%; height:100%; border:0; display:block; background:#fff; }
+    * { box-sizing: border-box; }
 
-    .overlay{
-      position:fixed; inset:0; display:grid; place-items:center; gap:12px;
-      background:rgba(0,0,0,.55); color:#fff;
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      z-index:9999; transition:opacity .2s ease;
+    .app {
+      position: fixed;
+      inset: 0;
+      padding:
+        env(safe-area-inset-top, 0px)
+        env(safe-area-inset-right, 0px)
+        env(safe-area-inset-bottom, 0px)
+        env(safe-area-inset-left, 0px);
     }
-    .overlay.hidden{ opacity:0; pointer-events:none; }
-    .spinner{
-      width:34px; height:34px; border:3px solid rgba(255,255,255,.25);
-      border-top-color:rgba(255,255,255,.95); border-radius:50%;
-      animation:spin .8s linear infinite;
-    }
-    @keyframes spin{ to{ transform:rotate(360deg); } }
 
-    .hint{ font-size:14px; opacity:.9; text-align:center; padding:0 18px; }
-    .banner{
-      position:fixed; left:12px; right:12px; top:12px;
-      padding:10px 12px; border-radius:12px;
-      background:rgba(255,200,0,.18); color:#fff;
-      border:1px solid rgba(255,200,0,.35);
-      z-index:10000; display:none; backdrop-filter: blur(6px);
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; font-size:13px;
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #fff;
     }
-    .banner.show{ display:block; }
-    body{ overscroll-behavior:none; }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,.55);
+      color: #fff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      z-index: 9999;
+      transition: opacity .2s ease;
+    }
+    .overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 34px; height: 34px;
+      border: 3px solid rgba(255,255,255,.25);
+      border-top-color: rgba(255,255,255,.95);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hint { font-size: 14px; opacity: .9; text-align: center; padding: 0 18px; }
+
+    .banner {
+      position: fixed;
+      left: 12px; right: 12px; top: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 200, 0, .18);
+      color: #fff;
+      border: 1px solid rgba(255, 200, 0, .35);
+      z-index: 10000;
+      display: none;
+      backdrop-filter: blur(6px);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: 13px;
+    }
+    .banner.show { display: block; }
+    body { overscroll-behavior: none; }
   </style>
 </head>
 
@@ -59,11 +93,12 @@
       loading="eager"
       referrerpolicy="no-referrer-when-downgrade"
       allow="camera; microphone; geolocation; clipboard-read; clipboard-write; fullscreen"
+      sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"
     ></iframe>
   </div>
 
   <script>
-    // ✅ ใส่ลิงก์ /exec ของพพตรงนี้
+    // ✅ ใส่ URL /exec ของเว็บแอปพพตรงนี้
     const APP_URL = "https://script.google.com/macros/s/AKfycbwzoA8mcGj49faPZcDCbCxJG7sWedCdjX0ka0dSEQ4RXTtN2M8Kh_C-qZGs7312PXwAHA/exec";
 
     const LOAD_TIMEOUT_MS = 25000;
@@ -77,19 +112,23 @@
     let lastReloadAt = 0;
     let timeoutHandle = null;
 
-    function showOverlay(text){ hint.textContent = text || "กำลังเปิดเว็บแอป…"; overlay.classList.remove("hidden"); }
-    function hideOverlay(){ overlay.classList.add("hidden"); }
-
-    function canReloadNow(){ return (Date.now() - lastReloadAt) > RELOAD_COOLDOWN_MS; }
-
-    function armTimeout(){
+    function showOverlay(text) {
+      hint.textContent = text || "กำลังเปิดเว็บแอป…";
+      overlay.classList.remove("hidden");
+    }
+    function hideOverlay() {
+      overlay.classList.add("hidden");
+    }
+    function armTimeout() {
       clearTimeout(timeoutHandle);
       timeoutHandle = setTimeout(() => {
         hint.textContent = "โหลดนานกว่าปกติ… ถ้ายังไม่ขึ้น อาจถูกบล็อกการฝัง iframe หรือเน็ตไม่เสถียร";
       }, LOAD_TIMEOUT_MS);
     }
-
-    function hardReload(){
+    function canReloadNow() {
+      return (Date.now() - lastReloadAt) > RELOAD_COOLDOWN_MS;
+    }
+    function hardReload() {
       if (!canReloadNow()) return;
       lastReloadAt = Date.now();
       showOverlay("กำลังโหลดใหม่…");
@@ -99,8 +138,8 @@
       armTimeout();
     }
 
-    function updateNetworkUI(){
-      if (navigator.onLine){
+    function updateNetworkUI() {
+      if (navigator.onLine) {
         banner.classList.remove("show");
       } else {
         banner.classList.add("show");
@@ -111,11 +150,14 @@
     window.addEventListener("online", () => { updateNetworkUI(); hardReload(); });
     window.addEventListener("offline", updateNetworkUI);
 
-    frame.addEventListener("load", () => { clearTimeout(timeoutHandle); hideOverlay(); });
+    frame.addEventListener("load", () => {
+      clearTimeout(timeoutHandle);
+      hideOverlay();
+    });
 
-    (function init(){
-      // ✅ เช็กแค่ “ยังไม่ได้ใส่ URL” เท่านั้น
-      if (!APP_URL || APP_URL.includes("https://script.google.com/macros/s/AKfycbwzoA8mcGj49faPZcDCbCxJG7sWedCdjX0ka0dSEQ4RXTtN2M8Kh_C-qZGs7312PXwAHA/exec")) {
+    (function init() {
+      // ✅ เช็กว่าใส่ URL แล้วจริงๆ
+      if (!APP_URL || APP_URL.includes("ใส่")) {
         showOverlay("โปรดใส่ URL เว็บแอปในตัวแปร APP_URL ก่อน");
         return;
       }
