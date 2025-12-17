@@ -3,121 +3,53 @@
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="color-scheme" content="light dark" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>WebApp Fullscreen</title>
 
   <style>
-    /* --- Hard reset / stable full-screen base --- */
-    html, body {
-      height: 100%;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;          /* กัน body scroll ที่ทำให้ iframe เพี้ยน */
-      background: #0b0b0c;
+    html, body { height:100%; width:100%; margin:0; padding:0; overflow:hidden; background:#0b0b0c; }
+    *{ box-sizing:border-box; }
+    .app{
+      position:fixed; inset:0;
+      padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px)
+               env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
     }
-    * { box-sizing: border-box; }
+    iframe{ width:100%; height:100%; border:0; display:block; background:#fff; }
 
-    /* --- Wrapper กัน safe-area (iPhone notch) --- */
-    .app {
-      position: fixed;
-      inset: 0;
-      padding:
-        env(safe-area-inset-top, 0px)
-        env(safe-area-inset-right, 0px)
-        env(safe-area-inset-bottom, 0px)
-        env(safe-area-inset-left, 0px);
+    .overlay{
+      position:fixed; inset:0; display:grid; place-items:center; gap:12px;
+      background:rgba(0,0,0,.55); color:#fff;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      z-index:9999; transition:opacity .2s ease;
     }
+    .overlay.hidden{ opacity:0; pointer-events:none; }
+    .spinner{
+      width:34px; height:34px; border:3px solid rgba(255,255,255,.25);
+      border-top-color:rgba(255,255,255,.95); border-radius:50%;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
 
-    /* --- Iframe full-screen --- */
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: 0;
-      display: block;            /* กัน gap ใต้ iframe */
-      background: #ffffff;
+    .hint{ font-size:14px; opacity:.9; text-align:center; padding:0 18px; }
+    .banner{
+      position:fixed; left:12px; right:12px; top:12px;
+      padding:10px 12px; border-radius:12px;
+      background:rgba(255,200,0,.18); color:#fff;
+      border:1px solid rgba(255,200,0,.35);
+      z-index:10000; display:none; backdrop-filter: blur(6px);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; font-size:13px;
     }
-
-    /* --- Loading overlay (เบา ๆ แต่ดูโปร) --- */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      gap: 12px;
-      background: rgba(0,0,0,.55);
-      color: #fff;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      z-index: 9999;
-      transition: opacity .2s ease;
-    }
-    .overlay.hidden { opacity: 0; pointer-events: none; }
-
-    .spinner {
-      width: 34px; height: 34px;
-      border: 3px solid rgba(255,255,255,.25);
-      border-top-color: rgba(255,255,255,.95);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .hint { font-size: 14px; opacity: .9; text-align: center; padding: 0 18px; }
-    .bar {
-      width: min(360px, 85vw);
-      height: 6px;
-      background: rgba(255,255,255,.18);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .bar > i {
-      display: block;
-      width: 35%;
-      height: 100%;
-      background: rgba(255,255,255,.85);
-      border-radius: 999px;
-      animation: slide 1.2s ease-in-out infinite;
-    }
-    @keyframes slide {
-      0% { transform: translateX(-120%); }
-      50% { transform: translateX(120%); }
-      100% { transform: translateX(260%); }
-    }
-
-    /* Offline / error banner */
-    .banner {
-      position: fixed;
-      left: 12px; right: 12px; top: 12px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(255, 200, 0, .18);
-      color: #fff;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      font-size: 13px;
-      border: 1px solid rgba(255, 200, 0, .35);
-      z-index: 10000;
-      display: none;
-      backdrop-filter: blur(6px);
-    }
-    .banner.show { display: block; }
-    .banner b { font-weight: 650; }
-
-    /* ป้องกัน iOS rubber-band / overscroll */
-    body { overscroll-behavior: none; }
+    .banner.show{ display:block; }
+    body{ overscroll-behavior:none; }
   </style>
 </head>
 
 <body>
-  <div class="banner" id="banner">
-    <b>การเชื่อมต่อมีปัญหา</b> — รอเน็ตกลับมาแล้วระบบจะโหลดใหม่อัตโนมัติ
-  </div>
+  <div class="banner" id="banner"><b>การเชื่อมต่อมีปัญหา</b> — เน็ตกลับมาแล้วจะโหลดใหม่อัตโนมัติ</div>
 
   <div class="overlay" id="overlay" aria-live="polite">
     <div class="spinner" aria-hidden="true"></div>
     <div class="hint" id="hint">กำลังเปิดเว็บแอป…</div>
-    <div class="bar" aria-hidden="true"><i></i></div>
   </div>
 
   <div class="app">
@@ -127,19 +59,15 @@
       loading="eager"
       referrerpolicy="no-referrer-when-downgrade"
       allow="camera; microphone; geolocation; clipboard-read; clipboard-write; fullscreen"
-      sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"
     ></iframe>
   </div>
 
   <script>
-    // =========================
-    // CONFIG
-    // =========================
-    const APP_URL = "ใส่ URL เว็บแอปที่นี่";   // เช่น https://script.google.com/macros/s/xxxx/exec
-    const LOAD_TIMEOUT_MS = 25000;             // ถ้าโหลดนานเกิน แสดงคำแนะนำ
-    const AUTO_RELOAD_ON_FAIL = true;
-    const RELOAD_COOLDOWN_MS = 8000;           // กันรีโหลดถี่เกิน
-    // =========================
+    // ✅ ใส่ลิงก์ /exec ของพพตรงนี้
+    const APP_URL = "https://script.google.com/macros/s/AKfycbwzoA8mcGj49faPZcDCbCxJG7sWedCdjX0ka0dSEQ4RXTtN2M8Kh_C-qZGs7312PXwAHA/exec";
+
+    const LOAD_TIMEOUT_MS = 25000;
+    const RELOAD_COOLDOWN_MS = 8000;
 
     const frame = document.getElementById("appFrame");
     const overlay = document.getElementById("overlay");
@@ -149,64 +77,44 @@
     let lastReloadAt = 0;
     let timeoutHandle = null;
 
-    function showOverlay(text) {
-      hint.textContent = text || "กำลังเปิดเว็บแอป…";
-      overlay.classList.remove("hidden");
+    function showOverlay(text){ hint.textContent = text || "กำลังเปิดเว็บแอป…"; overlay.classList.remove("hidden"); }
+    function hideOverlay(){ overlay.classList.add("hidden"); }
+
+    function canReloadNow(){ return (Date.now() - lastReloadAt) > RELOAD_COOLDOWN_MS; }
+
+    function armTimeout(){
+      clearTimeout(timeoutHandle);
+      timeoutHandle = setTimeout(() => {
+        hint.textContent = "โหลดนานกว่าปกติ… ถ้ายังไม่ขึ้น อาจถูกบล็อกการฝัง iframe หรือเน็ตไม่เสถียร";
+      }, LOAD_TIMEOUT_MS);
     }
 
-    function hideOverlay() {
-      overlay.classList.add("hidden");
-    }
-
-    function canReloadNow() {
-      return (Date.now() - lastReloadAt) > RELOAD_COOLDOWN_MS;
-    }
-
-    function hardReload() {
+    function hardReload(){
       if (!canReloadNow()) return;
       lastReloadAt = Date.now();
       showOverlay("กำลังโหลดใหม่…");
-      // cache-bust กันค้าง
       const url = new URL(APP_URL);
-      url.searchParams.set("_t", String(Date.now()));
+      url.searchParams.set("_t", String(Date.now())); // กัน cache ค้าง
       frame.src = url.toString();
       armTimeout();
     }
 
-    function armTimeout() {
-      clearTimeout(timeoutHandle);
-      timeoutHandle = setTimeout(() => {
-        hint.textContent = "โหลดนานกว่าปกติ… ถ้าไม่ขึ้น อาจถูกบล็อกการฝังใน iframe หรือเน็ตไม่เสถียร";
-        if (AUTO_RELOAD_ON_FAIL) {
-          // ลอง reload รอบหนึ่ง
-          setTimeout(() => hardReload(), 2000);
-        }
-      }, LOAD_TIMEOUT_MS);
-    }
-
-    // ONLINE / OFFLINE handling
-    function updateNetworkUI() {
-      if (navigator.onLine) {
+    function updateNetworkUI(){
+      if (navigator.onLine){
         banner.classList.remove("show");
       } else {
         banner.classList.add("show");
         showOverlay("ออฟไลน์อยู่… รอการเชื่อมต่อกลับมา");
       }
     }
-    window.addEventListener("online", () => {
-      updateNetworkUI();
-      hardReload();
-    });
+
+    window.addEventListener("online", () => { updateNetworkUI(); hardReload(); });
     window.addEventListener("offline", updateNetworkUI);
 
-    // Iframe events
-    frame.addEventListener("load", () => {
-      clearTimeout(timeoutHandle);
-      hideOverlay();
-    });
+    frame.addEventListener("load", () => { clearTimeout(timeoutHandle); hideOverlay(); });
 
-    // Start
-    (function init() {
+    (function init(){
+      // ✅ เช็กแค่ “ยังไม่ได้ใส่ URL” เท่านั้น
       if (!APP_URL || APP_URL.includes("https://script.google.com/macros/s/AKfycbwzoA8mcGj49faPZcDCbCxJG7sWedCdjX0ka0dSEQ4RXTtN2M8Kh_C-qZGs7312PXwAHA/exec")) {
         showOverlay("โปรดใส่ URL เว็บแอปในตัวแปร APP_URL ก่อน");
         return;
